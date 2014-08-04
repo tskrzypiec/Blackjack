@@ -1,433 +1,338 @@
 #include <iostream>
-#include <algorithm>//swap()
 #include <cstdlib>//rand(), srand()
 #include <ctime>//time
-using namespace std;
+#include <limits>//max()
 
-class Deck
+using namespace std;
+const unsigned int DECKSIZE = 52;
+
+class CDeck
 {
-	
 private:
-	
-	static const unsigned int deckSize = 52;
-	int deck[deckSize] = {2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,7,7,7,7,8,8,8,8,9,9,9,9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,11};			
-	int croupier[deckSize] = {0};
-	int player[deckSize] = {0};			
-	int lostToken = 0;
-	int winToken = 0;
-	
-	int playersScore = 0;
-	int croupiersScore = 0;
-	bool hit = true;	
-	bool playerStand = false;
-	bool croupierPass = false; 
-	bool playerLost = false;
-	bool croupierLost = false;
-			
+    unsigned int m_deck[DECKSIZE]=
+    {2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,7,7,7,7,8,8,8,8,9,9,9,9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,11,11,11,11};
+
 public:
-	
-	void shuffle();
-	void deal(); 
-	void playersCards(); 
-	void playersHit();
-	void cardDelete(); //delete card from deck array
-	void croupiersCards();
-	void croupiersHit();
-	void checkPlayersCards(); //check if we are over 21 or have blackjack
-	void checkCroupiersCards();
-	int croupiersTotal();
-	int playersTotal();	 
-	void results();
-	bool cardsEnough(); //check if we have cards to play
-	void reset(); 
-	void emptyHands();
-	void totalToken(); 
-	
+    void showDeck();
+    void shuffleDeck();
+
+    friend class CGame;
 };
 
-void Deck::shuffle()
+void CDeck::showDeck()
 {
-	int random = 0;		
-	for(int i = 0; i < 52; i++)
-	{
-		random = rand()%52;
-		swap(deck[i], deck[random]);
-	}
-		
-	return;	
-}
-
-void Deck::deal()
-{	
-    int firstIterator = 0;
-    int secondIterator = 1;
-	  
-    for(int i = 0; i < 2; i++)
-    {	
-		player[i] = deck[firstIterator + firstIterator];
-       	croupier[i] = deck[i + secondIterator];
-       	
-        firstIterator++;
-        secondIterator++; 	
-    } 
-  	    
-    for(int i = 0; i < 4; i++)//delete 4 cards we got from deck
+    cout << "This is your deck:" << endl;
+    for(int i = 0; i < DECKSIZE; i++)
     {
-        cardDelete(); 		 
-    } 
-	
-	playersTotal();
-		
-	checkPlayersCards();
-					
-	if(cardsEnough() == false)
-    {	
-        cout<< "\n No cards, game over. " <<endl;	
+        cout << m_deck[i] << "\t";
     }
-			    
-	return;
+    cout << endl << endl;
 }
 
-void Deck::playersCards()
+void CDeck::shuffleDeck()
 {
-	
-	cout <<" \n\n Player's cards value: ";
-	
-	for(int i = 0; player[i]!= 0; i++)
-	{
-		cout<< player[i] << " ";		
-	}
-			
-	return;
+    int _x = 0;
+    for(int i = 0; i < DECKSIZE; i++)
+    {
+        _x = rand() % (DECKSIZE - i) + i;
+        swap(*(m_deck + i), *(m_deck + _x));
+    }
 }
 
-void Deck::croupiersCards()
+class CPlayer
 {
-	if(cardsEnough() == true)
-	{
-		cout<< "\n Croupier's card value: " << croupier[0] <<endl<<endl;
-	}
-		
-	return;	
-}
+private:
+    unsigned int m_winnings;
+    unsigned int m_losses;
 
-void Deck::checkPlayersCards()
+    friend class CGame;
+};
+
+class CGame
 {
-	
-	if(playersScore > 21)
-	{
-		playersCards();
-		cout<<"\n It's over 21, You Loose!"<<endl;
-		playerStand = true;
-		croupierPass = true;
-		playerLost = true;
-		lostToken += 2;
-	}
-			
-	if(playersScore == 21)
-	{
-		playersCards();
-		cout<< "\n Blackjack! You Win!" <<endl;
-		playerStand = true;
-		croupierPass = true;
-		croupierLost = true;
-		winToken += 2;
-	}	
-	
-	if(playersScore < 21)
-	{
-		playersCards();
-	}
-		
-	return;	
-	
-}
+private:
+    CDeck oNewDeck;
+    CPlayer oNewPlayer;
+    unsigned int m_playerHand[DECKSIZE]={0};
+    unsigned int * m_pPlayerHand = m_playerHand;
+    unsigned int m_CPUHand[DECKSIZE]={0};
+	unsigned int * m_pCPUHand = m_CPUHand;
+    unsigned int m_handScore;
+    bool m_noCardsInDeck;
 
-void Deck::checkCroupiersCards()
+    void hitCard(CDeck &oNewDeck, unsigned int *a_pHand);
+    void updateDeck(CDeck &oNewDeck);
+	unsigned int deal(CDeck &oNewDeck);
+    unsigned int countHowManyAcesInHand(unsigned int *a_pHand);
+    void game(CPlayer &oNewPlayer, CDeck &oNewDeck, unsigned int a_iPlayerChoice);
+    unsigned int countHandScore(unsigned int *a_pHand);
+    bool goEmptyHands(unsigned int *a_pHand);
+    bool checkHand(unsigned int *a_pHand);
+    void showTable(unsigned int *a_pHand);
+    void showCurrentScore(unsigned int *a_pHand);
+    unsigned int countWhoWin();
+
+public:
+	CGame();
+    void interfaceOfTheGame();
+    bool isThereNoCardsInDeck() { return m_noCardsInDeck; }
+    void showStats();
+};
+
+CGame::CGame()
 {
-	
-	if(croupiersScore > 21)
-	{
-		cout<< " \n\n Croupier's cards value:   ";
-	
-		for(int i = 0; croupier[i]!= 0; i++)
-		{
-			cout<< croupier[i] << " ";		
-		}
-	
-		cout<< " \n Croupier's cards value is over 21. You Win! " <<endl;
-		
-		croupierPass = true;
-		croupierLost = true;
-		winToken+=2;	
-	}
-			
-	if(croupiersScore > 16 && croupiersScore < 21)
-	{
-		cout<< " \n\n Croupier's cards value:   ";
-	
-		for(int i = 0; croupier[i]!= 0; i++)
-		{
-			cout<< croupier[i] << " ";		
-		}
-		
-		croupierPass = true;	
-	}
-	
-	if(croupiersScore == 21)
-	{
-		
-		cout<< " \n\n Croupier's cards value:   ";
-	
-		for(int i = 0; croupier[i]!= 0; i++)
-		{
-			cout<< croupier[i] << " ";		
-		}
-		
-		playerLost = true;
-		croupierPass = true;
-		
-		cout<< " \n Croupier has Blackjack. You Loose! " <<endl;
-			
-	}
-				
-	return;
+    cout << "Hello World! This is awesome blackjack game!" << endl << endl;
+    oNewDeck.shuffleDeck();
+    oNewPlayer.m_losses = 0;
+    oNewPlayer.m_winnings = 0;
 }
 
-void Deck::playersHit()
-{	
-	while(playerStand == false)
-	{
-		
-		if(cardsEnough() == false)
-		{
-			cout<< " \n No cards, game over." <<endl;
-			break;
-		}
-		
-		cout<< "\n\n Hit? (yes - '1', no - '0') ";
-	
-		cin>> hit;
-				
-		if(hit == true)
-		{	
-		
-			int NumberOfcards = 0;
-	 
-    		for(int i = 0; player[i]!= 0; i++) //check how many cards are in my "hand"
-    		{
-      			player[i];  
-	  			NumberOfcards++;    
-    		}
-    
-    		player[NumberOfcards] = deck[0]; //hit another card from deck
-				
-			cardDelete();
-			
-			playersTotal();	
-			
-			checkPlayersCards();
-								
-		}
-		
-		if(hit == false)
-		{	
-			playersTotal();
-			playerStand = true;
-		}
-				
-	}
-		
-	return;	
-}	
-
-void Deck::croupiersHit()
+void CGame::interfaceOfTheGame()
 {
-	while(croupierPass == false)
-	{
-		croupiersTotal();	
-		
-		while(croupiersScore <= 16)
-		{
-			
-			if(cardsEnough() == false)
-			{
-				cout<< " \nNo cards, game over." <<endl;
-				break;
-			}
-			
-			int NumberOfcards = 0;
-			
-			for(int i = 0; croupier[i]!= 0; i++)
-    		{
-      			croupier[i];  
-	  			NumberOfcards++;    
-    		}
-    		   	
-			croupier[NumberOfcards] = deck[0];
-			
-    		cardDelete();
-    		
-			croupiersTotal();
-							
-		}
-		
-		checkCroupiersCards();
-	
-	}
-	
-	return;	
+    unsigned int _playerChoice;
+
+    while((cout << "[1] HIT / [2] STAND ([0] EXIT) ") && (!(cin >> _playerChoice) || _playerChoice < 0 || _playerChoice > 3))
+    {
+        cin.clear();
+        cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    }
+
+    game(oNewPlayer, oNewDeck, _playerChoice);
 }
 
-void Deck::cardDelete()
+void CGame::showStats()
 {
-	for(int k = 0; k < 52; k++)//moving elements in my array
-	{
-		deck[k] = deck[k+1];
-	}
-	
-	int lastCard = 51;	//I put 0 in the last cell which has junk after moving elements	
-	deck[lastCard] = 0;
-		
-	return;	
-}	
+    cout << endl << "Tokens (win/loss): " << oNewPlayer.m_winnings << "/" << oNewPlayer.m_losses << endl << endl;
+}
 
-int Deck::playersTotal()
+unsigned int CGame::countHowManyAcesInHand(unsigned int *a_pHand)
 {
-	playersScore = 0;
-	
-	for(int i = 0; player[i]!= 0; i++)
-	{
-		playersScore = playersScore + player[i];		
-	}
-			
-	return playersScore;
+    unsigned int _result = 0;
+    for(int i = 0; a_pHand[i] != 0; i++)
+    {
+        if(11 == a_pHand[i])
+            _result++;
+    }
+    return _result;
 }
 
-int Deck::croupiersTotal()
-{	
-	croupiersScore = 0;
-	
-	for(int i = 0; croupier[i]!= 0; i++)
-	{
-		croupiersScore = croupiersScore + croupier[i];		
-	}
-	
-	return croupiersScore;
-}
-
-void Deck::results()
-{	
-
-	if(croupierLost == false && playerLost == false)
-	{
-		
-		cout<< " \n Player's score: " << playersScore <<endl;
-		cout<< " Croupier's score: " << croupiersScore <<endl;
-
-		if(playersScore > croupiersScore)
-		{
-			cout<< " You Win! Congratulations!" <<endl;
-			winToken += 2;
-		}
-		
-		if(playersScore < croupiersScore)
-		{
-			cout<< " You Lost with Croupier!" <<endl;
-			lostToken += 2;
-		}
-		
-		if(playersScore == croupiersScore)
-		{
-			cout<< " Draw!" <<endl;
-		}
-		
-	}
-		
-	return;	
-}
-
-bool Deck::cardsEnough()
-{	
-	if(deck[0] == 0)
-	{
-		croupierLost = true;
-		playerLost = true;
-		croupierPass = true;
-		playerStand = true;
-			
-		return false;
-	}
-
-	return true;				
-}	
-
-void Deck::emptyHands()
+void CGame::game(CPlayer &oNewPlayer, CDeck &oNewDeck, unsigned int a_iPlayerChoice)
 {
-	for(int i = 0; player[i]!= 0; i++)
-	{
-		player[i] = 0;
-	}
-	
-	for(int i = 0; croupier[i]!= 0; i++)
-	{
-		croupier[i] = 0;
-	}	
-	
-	return;	
+    if(1 == a_iPlayerChoice)
+    {
+        hitCard(oNewDeck, m_pPlayerHand);
+        showTable(m_pPlayerHand);
+        showCurrentScore(m_pPlayerHand);
+		
+		if(21 == countHandScore(m_pPlayerHand))// when 21
+        {
+            cout << "Blackjack You Win!" << endl << endl;
+        	oNewPlayer.m_winnings+=3;
+            goEmptyHands(m_pPlayerHand);
+            goEmptyHands(m_pCPUHand);
+        }
+		
+        if(false == checkHand(m_pPlayerHand))//returns false when over 21
+        {
+            cout << "Over 21! You have lost." << endl << endl;
+            oNewPlayer.m_losses+=2;
+            goEmptyHands(m_pPlayerHand);
+            goEmptyHands(m_pCPUHand);
+        }
+    }
+
+    if(2 == a_iPlayerChoice)
+    {
+        cout << endl << "-----------------------------" << endl << "Player STAND. It's CPU turn." << endl << endl;
+        while(false == m_noCardsInDeck)
+        {
+            unsigned int _numberOfAcesInHand = countHowManyAcesInHand(m_pCPUHand);
+            unsigned int _CPUScoreWithAces = countHandScore(m_pCPUHand) - (10 * _numberOfAcesInHand);
+
+            if(17 >= _CPUScoreWithAces)
+            {
+                hitCard(oNewDeck, m_pCPUHand);
+                showTable(m_pCPUHand);
+                showCurrentScore(m_pCPUHand);
+            }
+
+            if(false == checkHand(m_pCPUHand))//returns false when over 21
+            {
+                cout << "Over 21! Player has won." << endl << endl;
+                oNewPlayer.m_winnings+=2;
+                break;
+            }
+
+            if(17 < _CPUScoreWithAces)
+            {
+                unsigned int _result = countWhoWin();
+
+                if(0 == _result)
+                {
+                    cout << "It's a draw!" << endl << endl;
+                }
+                else if(1 == _result)
+                {
+                    cout << "Player has won." << endl << endl;
+                    oNewPlayer.m_winnings+=2;
+                }
+                else if(2 == _result)
+                {
+                    cout << "Player has lost." << endl << endl;
+                    oNewPlayer.m_losses+=2;
+                }
+
+                break;
+            }
+
+        }
+        goEmptyHands(m_pPlayerHand);
+        goEmptyHands(m_pCPUHand);
+    }
+
+    if(0 == a_iPlayerChoice)
+    {
+        showStats();
+        exit(EXIT_SUCCESS);
+    }
 }
 
-void Deck::reset()
+void CGame::hitCard(CDeck &oNewDeck, unsigned int *a_pHand)
 {
-	if(cardsEnough() == true)
-	{
-		croupierPass = false;
-		croupierLost = false;
-		playerStand = false;
-		playerLost = false;
-		hit = true;
-		playersScore = 0;
-		croupiersScore = 0;		
-	}
-		
-	return;	
+    for(int i = 0; i < DECKSIZE; i++)
+    {
+        if(0 == a_pHand[i])
+        {
+            a_pHand[i] = deal(oNewDeck);
+            break;
+        }
+    }
 }
-	
-void Deck::totalToken()
+
+void CGame::updateDeck(CDeck &oNewDeck)
 {
-	cout<< " \n Win Tokens score (2 Tokens bet per game): " << winToken <<endl;
-	cout<< " Lost Tokens score (2 Tokens bet per game): " << lostToken <<endl;
+    for(int i = 1; i < DECKSIZE; i++)
+    {
+        oNewDeck.m_deck[i - 1] = oNewDeck.m_deck[i];
+    }
+    oNewDeck.m_deck[DECKSIZE-1] = 0;
+}
+
+unsigned int CGame::deal(CDeck &oNewDeck)
+{
+    unsigned int _takenCard = oNewDeck.m_deck[0];
+
+    if(_takenCard)
+    {
+        updateDeck(oNewDeck);
+        m_noCardsInDeck = false;
+    }
+    else
+    {
+        cerr << "There is no card left in Deck - bets are void" << endl;
+        m_noCardsInDeck = true;
+    }
+
+    return _takenCard;
+}
+
+void CGame::showTable(unsigned int *a_pHand)
+{
+    for(int i = 0; (DECKSIZE > i && 0 != a_pHand[i]); i++)
+    {
+        cout << "(" << a_pHand[i] << ")" << "\t";
+    }
+}
+
+void CGame::showCurrentScore(unsigned int *a_pHand)
+{
+    unsigned int _numberOfAcesInHand = countHowManyAcesInHand(a_pHand);
+
+    if(0 < _numberOfAcesInHand)
+    {
+        cout << endl << "Current score: (" << countHandScore(a_pHand) - (10 * _numberOfAcesInHand) << ")/(" << countHandScore(a_pHand) <<  ")" << endl << endl;
+    }
+    else//there is no ace in hand
+    {
+        cout << endl << "Current score: (" << countHandScore(a_pHand) <<  ")" << endl << endl;
+    }
+}
+
+bool CGame::checkHand(unsigned int *a_pHand)
+{
+    bool _result;
+    unsigned int _score = countHandScore(a_pHand);
+    unsigned int _numberOfAcesInHand = countHowManyAcesInHand(a_pHand);
+
+    if(21 < (_score - (10 * _numberOfAcesInHand)))
+    {
+        _result = false;
+    }
+    else
+    {
+        _result = true;
+    }
+
+    return _result;
+}
+
+unsigned int CGame::countHandScore(unsigned int *a_pHand)
+{
+    unsigned int _handSum = 0;
+    for(int i = 0; (DECKSIZE > i && 0 != a_pHand[i]); i++)
+    {
+        _handSum = _handSum + a_pHand[i];
+    }
+    return _handSum;
+}
+
+unsigned int CGame::countWhoWin()
+{
+	unsigned int _playersScore = countHandScore(m_pPlayerHand);
+    unsigned int _numberOfAcesInHand = countHowManyAcesInHand(m_pCPUHand);
+    unsigned int _CPUScoreWithAces = countHandScore(m_pCPUHand) - (10 * _numberOfAcesInHand);
+    unsigned int _result;
 	
-	return;	
-}	
-	
+    if(_playersScore == _CPUScoreWithAces)
+    {
+        _result = 0;
+    }
+
+    if(_playersScore > _CPUScoreWithAces)
+    {
+        _result = 1;
+    }
+
+    if(_playersScore < _CPUScoreWithAces)
+    {
+        _result = 2;
+    }
+
+    return _result;
+}
+
+bool CGame::goEmptyHands(unsigned int *a_pHand)
+{
+    bool _result;
+    for(int i = 0; a_pHand[i] != 0; i++)
+    {
+        a_pHand[i] = 0;
+    }
+    return _result;
+}
+
 int main()
 {
-	
-	srand(time(NULL));	
-	Deck blackjack;	
+    srand(time(NULL));
+    CGame oNewGame;
 
-	blackjack.shuffle();
-				
-	while(blackjack.cardsEnough() == true)
-	{	
+    while(false == oNewGame.isThereNoCardsInDeck())
+    {
+        oNewGame.interfaceOfTheGame();
+    }
 
-		blackjack.deal();
+    cout << "It's over!" << endl;
+    oNewGame.showStats();
 
-		blackjack.croupiersCards();
-				
-		blackjack.playersHit();
-		
-		blackjack.croupiersHit();
-
-		blackjack.results();
-		
-		blackjack.emptyHands();
-		
-		blackjack.reset();
-				
-	}
-		blackjack.totalToken();
-			
-	return 0;
+    return 0;
 }
